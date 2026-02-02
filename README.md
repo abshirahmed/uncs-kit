@@ -12,12 +12,12 @@ bun install
 Requires environment variables (add to `~/.zshrc`):
 
 ```bash
-export CONFLUENCE_SITE="popp-ai.atlassian.net"
+export CONFLUENCE_SITE="your-site.atlassian.net"
 export CONFLUENCE_EMAIL="your@email.com"
 export CONFLUENCE_API_TOKEN="your-token"  # https://id.atlassian.com/manage-profile/security/api-tokens
 
 # Jira uses same credentials (or set JIRA_* separately)
-export JIRA_SITE="popp-ai.atlassian.net"
+export JIRA_SITE="your-site.atlassian.net"
 export JIRA_EMAIL="your@email.com"
 export JIRA_API_TOKEN="your-token"
 ```
