@@ -133,7 +133,9 @@ bun confluence.ts delete 123456789
 
 ### download-confluence
 
-Download Confluence pages to `.context/` for offline reference.
+Download Confluence pages as local markdown files for offline reference. Useful for giving AI tools (Claude, Cursor, etc.) context from your Confluence docs without needing API access at runtime.
+
+**Output format:** Each page is converted from HTML to markdown with YAML frontmatter containing title, page ID, source URL, and download timestamp.
 
 ```bash
 # Download a single page
