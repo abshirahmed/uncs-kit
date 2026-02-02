@@ -1,6 +1,6 @@
-# Popp Scripts
+# Dev Scripts
 
-CLI tools for Popp development workflows. Built with Bun and TypeScript.
+CLI tools for development workflows. Built with Bun and TypeScript.
 
 ## Setup
 
