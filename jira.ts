@@ -352,6 +352,7 @@ program
   .option('-l, --labels <labels>', 'New labels (comma-separated, replaces existing)')
   .option('-a, --assignee <email>', 'New assignee email or name')
   .option('--unassign', 'Remove assignee')
+  .option('--points <number>', 'Story points')
   .option('-j, --json', 'Output as JSON')
   .action(
     async (
@@ -365,6 +366,7 @@ program
         labels?: string;
         assignee?: string;
         unassign?: boolean;
+        points?: string;
         json?: boolean;
       }
     ) => {
@@ -419,6 +421,7 @@ program
         priority: options.priority,
         labels: options.labels?.split(',').map((l) => l.trim()),
         assigneeAccountId,
+        storyPoints: options.points ? parseInt(options.points, 10) : undefined,
       });
 
       if (!success) {

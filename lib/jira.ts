@@ -20,6 +20,7 @@ export interface IssueInfo {
   created?: string;
   updated?: string;
   labels?: string[];
+  storyPoints?: number;
   url: string;
 }
 
@@ -272,6 +273,7 @@ export async function getIssue(
         'created',
         'updated',
         'labels',
+        'customfield_10016', // Story points
       ],
     });
 
@@ -290,6 +292,7 @@ export async function getIssue(
       created: issue.fields?.created,
       updated: issue.fields?.updated,
       labels: issue.fields?.labels,
+      storyPoints: (issue.fields as Record<string, unknown>)?.['customfield_10016'] as number | undefined,
       url: `https://${config.site}/browse/${issue.key}`,
     };
   } catch {
@@ -518,6 +521,7 @@ export interface UpdateIssueParams {
   priority?: string;
   labels?: string[];
   assigneeAccountId?: string | null; // null to unassign
+  storyPoints?: number;
 }
 
 /**
@@ -552,6 +556,10 @@ export async function updateIssue(
 
     if (params.assigneeAccountId !== undefined) {
       fields.assignee = params.assigneeAccountId ? { accountId: params.assigneeAccountId } : null;
+    }
+
+    if (params.storyPoints !== undefined) {
+      fields['customfield_10016'] = params.storyPoints;
     }
 
     await client.issues.editIssue({ issueIdOrKey, fields });
