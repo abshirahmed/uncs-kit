@@ -273,7 +273,7 @@ export async function getIssue(
         'created',
         'updated',
         'labels',
-        'customfield_10016', // Story points
+        'customfield_10031', // Story points
       ],
     });
 
@@ -292,7 +292,7 @@ export async function getIssue(
       created: issue.fields?.created,
       updated: issue.fields?.updated,
       labels: issue.fields?.labels,
-      storyPoints: (issue.fields as Record<string, unknown>)?.['customfield_10016'] as number | undefined,
+      storyPoints: (issue.fields as Record<string, unknown>)?.['customfield_10031'] as number | undefined,
       url: `https://${config.site}/browse/${issue.key}`,
     };
   } catch {
@@ -453,9 +453,9 @@ export async function createIssue(
     }
 
     // Story points - common custom field IDs: 10016 (Jira Software), 10028 (some instances)
-    // PAD project uses customfield_10016 for story points
+    // PAD project uses customfield_10031 for Story Points (UI visible)
     if (params.storyPoints !== undefined) {
-      fields['customfield_10016'] = params.storyPoints;
+      fields['customfield_10031'] = params.storyPoints;
     }
 
     const response = await client.issues.createIssue({
@@ -559,7 +559,7 @@ export async function updateIssue(
     }
 
     if (params.storyPoints !== undefined) {
-      fields['customfield_10016'] = params.storyPoints;
+      fields['customfield_10031'] = params.storyPoints;
     }
 
     await client.issues.editIssue({ issueIdOrKey, fields });
