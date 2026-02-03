@@ -43,6 +43,8 @@ export interface CreateIssueParams {
   priority?: string;
   labels?: string[];
   assigneeAccountId?: string;
+  parentKey?: string; // Parent issue key (epic for stories, story for subtasks)
+  storyPoints?: number; // Story points (custom field)
 }
 
 /**
@@ -405,6 +407,16 @@ export async function createIssue(
 
     if (params.assigneeAccountId) {
       fields.assignee = { accountId: params.assigneeAccountId };
+    }
+
+    if (params.parentKey) {
+      fields.parent = { key: params.parentKey };
+    }
+
+    // Story points - common custom field IDs: 10016 (Jira Software), 10028 (some instances)
+    // PAD project uses customfield_10016 for story points
+    if (params.storyPoints !== undefined) {
+      fields['customfield_10016'] = params.storyPoints;
     }
 
     const response = await client.issues.createIssue({

@@ -199,6 +199,8 @@ program
   .option('-P, --priority <priority>', 'Priority (e.g., High, Medium, Low)')
   .option('-l, --labels <labels>', 'Comma-separated labels')
   .option('-a, --assignee <email>', 'Assignee email or name')
+  .option('--parent <key>', 'Parent issue key (epic for stories, story for subtasks)')
+  .option('--points <number>', 'Story points')
   .option('-j, --json', 'Output as JSON')
   .action(
     async (options: {
@@ -211,6 +213,8 @@ program
       priority?: string;
       labels?: string;
       assignee?: string;
+      parent?: string;
+      points?: string;
       json?: boolean;
     }) => {
       if (!options.json) {
@@ -266,6 +270,8 @@ program
         priority: options.priority,
         labels: options.labels?.split(',').map((l) => l.trim()),
         assigneeAccountId,
+        parentKey: options.parent,
+        storyPoints: options.points ? parseInt(options.points, 10) : undefined,
       });
 
       if (!issue) {
