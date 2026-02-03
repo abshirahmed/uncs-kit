@@ -77,10 +77,22 @@ export function markdownToAdf(markdown: string): object {
   let inCodeBlock = false;
   let codeBlockContent: string[] = [];
   let codeBlockLang = '';
+  let currentBulletList: object[] | null = null;
+
+  const flushBulletList = () => {
+    if (currentBulletList && currentBulletList.length > 0) {
+      content.push({
+        type: 'bulletList',
+        content: currentBulletList,
+      });
+      currentBulletList = null;
+    }
+  };
 
   for (const line of lines) {
     // Code block start/end
     if (line.startsWith('```')) {
+      flushBulletList();
       if (inCodeBlock) {
         // End code block
         content.push({
@@ -104,8 +116,9 @@ export function markdownToAdf(markdown: string): object {
       continue;
     }
 
-    // Empty line = paragraph break
+    // Empty line = paragraph break (and ends bullet list)
     if (line.trim() === '') {
+      flushBulletList();
       continue;
     }
 
@@ -115,6 +128,7 @@ export function markdownToAdf(markdown: string): object {
     const h3Match = line.match(/^### (.+)$/);
 
     if (h1Match) {
+      flushBulletList();
       content.push({
         type: 'heading',
         attrs: { level: 1 },
@@ -123,6 +137,7 @@ export function markdownToAdf(markdown: string): object {
       continue;
     }
     if (h2Match) {
+      flushBulletList();
       content.push({
         type: 'heading',
         attrs: { level: 2 },
@@ -131,6 +146,7 @@ export function markdownToAdf(markdown: string): object {
       continue;
     }
     if (h3Match) {
+      flushBulletList();
       content.push({
         type: 'heading',
         attrs: { level: 3 },
@@ -139,32 +155,34 @@ export function markdownToAdf(markdown: string): object {
       continue;
     }
 
-    // Bullet list item
+    // Bullet list item - accumulate into single list
     const bulletMatch = line.match(/^[-*] (.+)$/);
     if (bulletMatch) {
-      content.push({
-        type: 'bulletList',
+      if (!currentBulletList) {
+        currentBulletList = [];
+      }
+      currentBulletList.push({
+        type: 'listItem',
         content: [
           {
-            type: 'listItem',
-            content: [
-              {
-                type: 'paragraph',
-                content: parseInlineContent(bulletMatch[1]!),
-              },
-            ],
+            type: 'paragraph',
+            content: parseInlineContent(bulletMatch[1]!),
           },
         ],
       });
       continue;
     }
 
-    // Regular paragraph
+    // Regular paragraph (ends bullet list)
+    flushBulletList();
     content.push({
       type: 'paragraph',
       content: parseInlineContent(line),
     });
   }
+
+  // Flush any remaining bullet list
+  flushBulletList();
 
   return {
     type: 'doc',
@@ -288,20 +306,38 @@ function extractTextFromAdf(adf: unknown): string | undefined {
   const doc = adf as { content?: unknown[] };
   if (!doc.content) return undefined;
 
-  const extractText = (node: unknown): string => {
+  const extractNode = (node: unknown, depth = 0): string => {
     if (!node || typeof node !== 'object') return '';
     const n = node as { type?: string; text?: string; content?: unknown[] };
 
     if (n.type === 'text' && n.text) return n.text;
-    if (n.content) return n.content.map(extractText).join('');
+
+    if (n.type === 'bulletList' && n.content) {
+      return n.content.map((item) => '- ' + extractNode(item, depth + 1)).join('\n') + '\n';
+    }
+
+    if (n.type === 'listItem' && n.content) {
+      return n.content.map((c) => extractNode(c, depth)).join('').trim();
+    }
+
+    if (n.type === 'paragraph' && n.content) {
+      return n.content.map((c) => extractNode(c, depth)).join('');
+    }
+
+    if (n.type === 'heading' && n.content) {
+      return n.content.map((c) => extractNode(c, depth)).join('');
+    }
+
+    if (n.content) return n.content.map((c) => extractNode(c, depth)).join('');
     return '';
   };
 
   return doc.content
     .map((node) => {
       const n = node as { type?: string };
-      const text = extractText(node);
+      const text = extractNode(node);
       if (n.type === 'paragraph' || n.type === 'heading') return text + '\n';
+      if (n.type === 'bulletList') return text;
       return text;
     })
     .join('')
