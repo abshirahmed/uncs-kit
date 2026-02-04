@@ -4,6 +4,7 @@
 
 import { Version3Client } from 'jira.js';
 import { loadAtlassianConfig, type AtlassianConfig } from './atlassian';
+import { log } from './logger';
 
 export type JiraConfig = AtlassianConfig;
 
