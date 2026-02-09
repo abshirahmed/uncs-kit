@@ -25,7 +25,7 @@ bun install
 bun run setup
 ```
 
-`bun run setup` links all CLIs to your PATH — `pull-all`, `jira`, `confluence`, and `download-confluence` are ready to use anywhere.
+`bun run setup` generates shim scripts in `~/.local/bin/`. If that's not in your PATH, the script will tell you what to add. After that, `pull-all`, `jira`, `confluence`, and `download-confluence` are ready to use anywhere.
 
 For Atlassian tools, you'll also need API credentials — see the [atlassian-cli README](./packages/atlassian-cli/).
 
