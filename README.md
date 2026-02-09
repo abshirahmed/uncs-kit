@@ -15,6 +15,13 @@ A Bun workspaces monorepo with CLI tools for git workflows and Atlassian (Jira +
 ## Prerequisites
 
 - [Bun](https://bun.sh) v1.0+
+  ```bash
+  # macOS / Linux
+  curl -fsSL https://bun.sh/install | bash
+
+  # Windows
+  powershell -c "irm bun.sh/install.ps1 | iex"
+  ```
 
 ## Quick start
 
