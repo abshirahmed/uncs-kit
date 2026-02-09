@@ -47,8 +47,9 @@ download-confluence search "query" -o ./output/
 2. Add `@uncskit/shared` as a dependency if you need logger/markdown utils
 3. Use `commander` for CLI, `@uncskit/shared` for TUI output
 4. Run `bun install` to link the workspace
-5. Run `bun link` inside the package to register global binaries
-6. Add a `README.md` to the package
+5. Add `bun link` for the package to the root `postinstall` script
+6. Run `bun install` to link everything
+7. Add a `README.md` to the package
 
 ## Adding Code to Existing Packages
 
@@ -68,8 +69,6 @@ export ATLASSIAN_API_TOKEN="your-token"
 # Optional: custom Jira story points field (default: customfield_10031)
 export JIRA_STORY_POINTS_FIELD="customfield_10031"
 
-# Binaries are globally linked via `bun link` (in ~/.bun/bin/)
-# Run once after cloning:
-#   cd packages/pull-all && bun link
-#   cd packages/atlassian-cli && bun link
+# Binaries (pull-all, jira, confluence, download-confluence) are
+# auto-linked to ~/.bun/bin/ via postinstall — just run `bun install`
 ```
