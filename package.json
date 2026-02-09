@@ -1,39 +1,9 @@
 {
-  "name": "popp-scripts",
-  "version": "1.0.0",
-  "description": "CLI tools for Popp development workflows",
-  "type": "module",
+  "name": "uncs-kit",
   "private": true,
-  "scripts": {
-    "confluence": "bun confluence.ts",
-    "confluence:get": "bun confluence.ts get",
-    "confluence:search": "bun confluence.ts search",
-    "confluence:create": "bun confluence.ts create",
-    "confluence:update": "bun confluence.ts update",
-    "confluence:delete": "bun confluence.ts delete",
-    "confluence:download": "bun download-confluence.ts",
-    "jira": "bun jira.ts",
-    "jira:get": "bun jira.ts get",
-    "jira:search": "bun jira.ts search",
-    "jira:create": "bun jira.ts create",
-    "jira:update": "bun jira.ts update",
-    "jira:delete": "bun jira.ts delete",
-    "jira:projects": "bun jira.ts projects",
-    "pull-all": "bun pull-all.ts"
-  },
+  "workspaces": ["packages/*"],
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
-  },
-  "dependencies": {
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "commander": "^14.0.2",
-    "confluence.js": "^2.1.0",
-    "jira.js": "^5.3.0",
-    "node-html-markdown": "^2.0.0",
-    "ora": "^9.1.0"
   }
 }

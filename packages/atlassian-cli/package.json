@@ -1,0 +1,17 @@
+{
+  "name": "@uncskit/atlassian-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Developer-friendly CLI for Jira and Confluence with Markdown support.",
+  "bin": {
+    "jira": "./src/jira.ts",
+    "confluence": "./src/confluence.ts",
+    "download-confluence": "./src/download-confluence.ts"
+  },
+  "dependencies": {
+    "@uncskit/shared": "workspace:*",
+    "commander": "^14.0.2",
+    "confluence.js": "^2.1.0",
+    "jira.js": "^5.3.0"
+  }
+}

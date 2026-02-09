@@ -4,20 +4,46 @@
   "workspaces": {
     "": {
       "name": "scripts",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "packages/atlassian-cli": {
+      "name": "@uncskit/atlassian-cli",
+      "version": "0.1.0",
+      "bin": {
+        "jira": "./src/jira.ts",
+        "confluence": "./src/confluence.ts",
+        "download-confluence": "./src/download-confluence.ts",
+      },
       "dependencies": {
-        "chalk": "^5.6.2",
-        "cli-table3": "^0.6.5",
+        "@uncskit/shared": "workspace:*",
         "commander": "^14.0.2",
         "confluence.js": "^2.1.0",
         "jira.js": "^5.3.0",
+      },
+    },
+    "packages/pull-all": {
+      "name": "@uncskit/pull-all",
+      "version": "0.1.0",
+      "bin": {
+        "pull-all": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@uncskit/shared": "workspace:*",
+        "chalk": "^5.6.2",
+        "commander": "^14.0.2",
+      },
+    },
+    "packages/shared": {
+      "name": "@uncskit/shared",
+      "version": "0.1.0",
+      "dependencies": {
+        "chalk": "^5.6.2",
+        "cli-table3": "^0.6.5",
         "node-html-markdown": "^2.0.0",
         "ora": "^9.1.0",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
       },
     },
   },
@@ -29,6 +55,12 @@
     "@types/bun": ["@types/bun@1.3.8", "", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
 
     "@types/node": ["@types/node@25.1.0", "", { "dependencies": { "undici-types": "~7.16.0" } }, "sha512-t7frlewr6+cbx+9Ohpl0NOTKXZNV9xHRmNOvql47BFJKcEG1CxtxlPEEe+gR9uhVWM4DwhnvTF110mIL4yP9RA=="],
+
+    "@uncskit/atlassian-cli": ["@uncskit/atlassian-cli@workspace:packages/atlassian-cli"],
+
+    "@uncskit/pull-all": ["@uncskit/pull-all@workspace:packages/pull-all"],
+
+    "@uncskit/shared": ["@uncskit/shared@workspace:packages/shared"],
 
     "accepts": ["accepts@1.3.8", "", { "dependencies": { "mime-types": "~2.1.34", "negotiator": "0.6.3" } }, "sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw=="],
 
