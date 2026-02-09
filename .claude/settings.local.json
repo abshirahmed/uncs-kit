@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(bun install:*)",
+      "Bash(bun pm ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(bunx tsc:*)",
+      "Bash(bun:*)"
+    ]
+  }
+}

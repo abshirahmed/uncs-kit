@@ -1,0 +1,238 @@
+# Monorepo Migration Design
+
+## Overview
+
+Restructure `dev-scripts` into a Bun workspaces monorepo called `uncs-kit`, with independently publishable packages under the `@uncskit` npm scope. Rename the GitHub repo from `dev-scripts` to `uncs-kit`.
+
+## Decisions
+
+| Decision | Choice |
+|---|---|
+| Monorepo tool | Bun workspaces |
+| Package grouping | By domain — `pull-all` standalone, Atlassian tools bundled |
+| Shared code | Internal `@uncskit/shared` package (not published) |
+| npm scope | `@uncskit` |
+| CLI binary names | `pull-all`, `jira`, `confluence`, `download-confluence` |
+| Runtime | Bun-only (no Node build step) |
+
+## Target Structure
+
+```
+uncs-kit/                             # renamed from dev-scripts
+├── package.json                      # workspace root (private)
+├── tsconfig.json                     # base tsconfig
+├── README.md
+├── LICENSE                           # MIT
+├── CLAUDE.md
+│
+├── packages/
+│   ├── shared/                       # @uncskit/shared (internal, not published)
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   └── src/
+│   │       ├── index.ts
+│   │       ├── logger.ts
+│   │       └── markdown.ts
+│   │
+│   ├── pull-all/                     # @uncskit/pull-all
+│   │   ├── package.json
+│   │   ├── tsconfig.json
+│   │   ├── README.md
+│   │   └── src/
+│   │       └── cli.ts
+│   │
+│   └── atlassian-cli/                # @uncskit/atlassian-cli
+│       ├── package.json
+│       ├── tsconfig.json
+│       ├── README.md
+│       └── src/
+│           ├── jira.ts
+│           ├── confluence.ts
+│           ├── download-confluence.ts
+│           └── lib/
+│               ├── atlassian.ts
+│               ├── jira.ts
+│               └── confluence.ts
+```
+
+## Package Configuration
+
+### Root `package.json`
+
+```json
+{
+  "name": "uncs-kit",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
+```
+
+### `packages/shared/package.json`
+
+```json
+{
+  "name": "@uncskit/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "node-html-markdown": "^2.0.0",
+    "ora": "^9.1.0"
+  }
+}
+```
+
+### `packages/pull-all/package.json`
+
+```json
+{
+  "name": "@uncskit/pull-all",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Smart multi-repo git updater. Pull all repos in a directory with one command.",
+  "bin": {
+    "pull-all": "./src/cli.ts"
+  },
+  "dependencies": {
+    "@uncskit/shared": "workspace:*"
+  }
+}
+```
+
+### `packages/atlassian-cli/package.json`
+
+```json
+{
+  "name": "@uncskit/atlassian-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Developer-friendly CLI for Jira and Confluence with Markdown support.",
+  "bin": {
+    "jira": "./src/jira.ts",
+    "confluence": "./src/confluence.ts",
+    "download-confluence": "./src/download-confluence.ts"
+  },
+  "dependencies": {
+    "@uncskit/shared": "workspace:*",
+    "commander": "^14.0.2",
+    "confluence.js": "^2.1.0",
+    "jira.js": "^5.3.0"
+  }
+}
+```
+
+## File Migration Map
+
+| Source (current) | Destination |
+|---|---|
+| `lib/logger.ts` | `packages/shared/src/logger.ts` |
+| `lib/markdown.ts` | `packages/shared/src/markdown.ts` |
+| `pull-all.ts` | `packages/pull-all/src/cli.ts` |
+| `jira.ts` | `packages/atlassian-cli/src/jira.ts` |
+| `confluence.ts` | `packages/atlassian-cli/src/confluence.ts` |
+| `download-confluence.ts` | `packages/atlassian-cli/src/download-confluence.ts` |
+| `lib/atlassian.ts` | `packages/atlassian-cli/src/lib/atlassian.ts` |
+| `lib/jira.ts` | `packages/atlassian-cli/src/lib/jira.ts` |
+| `lib/confluence.ts` | `packages/atlassian-cli/src/lib/confluence.ts` |
+
+## Code Changes Required
+
+### Import path updates
+
+All files that import from `./lib/logger.ts` or `./lib/markdown.ts` change to:
+
+```typescript
+import { log, spinner, createTable } from "@uncskit/shared";
+```
+
+Atlassian-internal imports stay relative:
+
+```typescript
+import { loadAtlassianConfig } from "./lib/atlassian.ts";
+```
+
+### Story points field (lib/jira.ts)
+
+Replace hardcoded `customfield_10031` with:
+
+```typescript
+const STORY_POINTS_FIELD = process.env.JIRA_STORY_POINTS_FIELD ?? "customfield_10031";
+```
+
+### tsconfig
+
+Base config at root, each package extends it:
+
+```json
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "include": ["src"]
+}
+```
+
+## Repo Rename
+
+```bash
+gh repo rename uncs-kit
+git remote set-url origin git@github.com:abshirahmed/uncs-kit.git
+```
+
+GitHub automatically redirects the old URL.
+
+## Files to Delete After Migration
+
+- `lib/` (moved into packages)
+- `pull-all.ts`, `jira.ts`, `confluence.ts`, `download-confluence.ts` (moved)
+- Old root `package.json` (replaced)
+- `bun.lock` (regenerated by `bun install`)
+
+## Documentation
+
+Each level of the repo gets its own README with a playful, approachable tone — this isn't enterprise docs.
+
+### Root `README.md`
+- Hero section with the `@uncskit` brand — short tagline, what this is
+- Quick "what's in the box" overview of all packages
+- Getting started (prerequisites: Bun, install command)
+- Links to each package's README for details
+- Keep it short — this is the landing page, not the manual
+
+### `packages/pull-all/README.md`
+- What it does, why it exists (one paragraph max)
+- Install + usage examples (real commands, real output)
+- All CLI flags documented with examples
+- GIF or terminal screenshot showing it in action (future nice-to-have)
+
+### `packages/atlassian-cli/README.md`
+- What it does, setup (env vars for auth)
+- One section per command (`jira`, `confluence`, `download-confluence`)
+- Real-world usage examples — not just `--help` output
+- The Markdown-to-ADF and download-for-AI-context angles are selling points — highlight them
+
+### Tone guidelines
+- **Voice: "uncs"** — short for uncle. The wise but cool guy who's already figured this out and is handing you the solution. Confident, relaxed, a little cheeky
+- Lead with "why you'd want this" before "how to install it" — uncs doesn't waste your time
+- Use real examples, not placeholder values like `foo` and `bar`
+- Keep it scannable — headers, code blocks, tables. No walls of text
+- Casual tech language — talk to devs like devs, not like customers
+- Fun is good, try-hard is not. The humour comes from being blunt and practical, not from forced jokes or emoji spam
+- Example energy: "You've got 30 repos. You're not going to `cd` into each one. Uncs has you covered."
+
+## Out of Scope (Future)
+
+- Tests and CI/CD
+- npm publishing workflow
+- Node.js compatibility / build step
+- CHANGELOG and CONTRIBUTING docs
