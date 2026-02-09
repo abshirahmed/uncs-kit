@@ -19,8 +19,7 @@ uncs-kit/
 │   ├── pull-all/        # @uncskit/pull-all — git multi-repo updater
 │   └── atlassian-cli/   # @uncskit/atlassian-cli — jira + confluence CLIs
 ├── package.json         # workspace root
-├── tsconfig.json        # base TypeScript config
-└── docs/                # design docs and plans
+└── tsconfig.json        # base TypeScript config
 ```
 
 ## Quick Reference
