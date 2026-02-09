@@ -4,6 +4,8 @@ Dev tools that do the boring stuff so you don't have to.
 
 CLI tools for git workflows and Atlassian (Jira + Confluence) — built for developers who'd rather write code than click through web UIs.
 
+![pull-all demo](tapes/output/pull-all.gif)
+
 ## What's in the box
 
 | Package | What it does |
@@ -53,6 +55,27 @@ download-confluence search "onboarding flow" -o ./.context/
 ```
 
 All commands support `--json` for machine-readable output and `--help` for full options.
+
+<details>
+<summary><strong>jira</strong></summary>
+
+![jira demo](tapes/output/jira.gif)
+
+</details>
+
+<details>
+<summary><strong>confluence</strong></summary>
+
+![confluence demo](tapes/output/confluence.gif)
+
+</details>
+
+<details>
+<summary><strong>download-confluence</strong></summary>
+
+![download-confluence demo](tapes/output/download-confluence.gif)
+
+</details>
 
 For Atlassian tools, you'll need API credentials — see the [atlassian-cli README](./packages/atlassian-cli/).
 
