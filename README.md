@@ -22,9 +22,10 @@ A Bun workspaces monorepo with CLI tools for git workflows and Atlassian (Jira +
 git clone git@github.com:abshirahmed/uncs-kit.git
 cd uncs-kit
 bun install
+bun run setup
 ```
 
-That's it. `bun install` automatically links all CLIs to your PATH — `pull-all`, `jira`, `confluence`, and `download-confluence` are ready to use.
+`bun run setup` links all CLIs to your PATH — `pull-all`, `jira`, `confluence`, and `download-confluence` are ready to use anywhere.
 
 For Atlassian tools, you'll also need API credentials — see the [atlassian-cli README](./packages/atlassian-cli/).
 

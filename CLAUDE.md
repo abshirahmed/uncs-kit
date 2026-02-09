@@ -69,6 +69,6 @@ export ATLASSIAN_API_TOKEN="your-token"
 # Optional: custom Jira story points field (default: customfield_10031)
 export JIRA_STORY_POINTS_FIELD="customfield_10031"
 
-# Binaries (pull-all, jira, confluence, download-confluence) are
-# auto-linked to ~/.bun/bin/ via postinstall — just run `bun install`
+# Link CLIs to PATH (one-time setup)
+# bun run setup
 ```

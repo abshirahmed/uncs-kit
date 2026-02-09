@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
-    "postinstall": "cd packages/pull-all && bun link && cd ../atlassian-cli && bun link"
+    "setup": "cd packages/pull-all && bun link && cd ../atlassian-cli && bun link"
   },
   "devDependencies": {
     "@types/bun": "latest",
