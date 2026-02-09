@@ -22,16 +22,13 @@ A Bun workspaces monorepo with CLI tools for git workflows and Atlassian (Jira +
 git clone git@github.com:abshirahmed/uncs-kit.git ~/.scripts
 cd ~/.scripts
 bun install
+
+# Link binaries globally (adds pull-all, jira, confluence, download-confluence to PATH)
+cd packages/pull-all && bun link && cd ../..
+cd packages/atlassian-cli && bun link && cd ../..
 ```
 
-Add aliases to `~/.zshrc`:
-
-```bash
-alias pull-all="bun run --cwd ~/.scripts pull-all"
-alias jira="bun run --cwd ~/.scripts jira"
-alias confluence="bun run --cwd ~/.scripts confluence"
-alias download-confluence="bun run --cwd ~/.scripts download-confluence"
-```
+That's it. The commands are now available everywhere — no aliases needed.
 
 For Atlassian tools, you'll also need API credentials — see the [atlassian-cli README](./packages/atlassian-cli/).
 

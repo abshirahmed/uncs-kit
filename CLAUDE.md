@@ -23,7 +23,7 @@ uncs-kit/
 ```bash
 bun install                                    # Install all workspace deps
 
-# Pull repos (via alias or bun run)
+# Pull repos
 pull-all                                       # Pull repos in current directory
 pull-all ~/projects                            # Pull repos in specified directory
 pull-all --dry-run                             # Preview only
@@ -47,7 +47,8 @@ download-confluence search "query" -o ./output/
 2. Add `@uncskit/shared` as a dependency if you need logger/markdown utils
 3. Use `commander` for CLI, `@uncskit/shared` for TUI output
 4. Run `bun install` to link the workspace
-5. Add a `README.md` to the package
+5. Run `bun link` inside the package to register global binaries
+6. Add a `README.md` to the package
 
 ## Adding Code to Existing Packages
 
@@ -67,9 +68,8 @@ export ATLASSIAN_API_TOKEN="your-token"
 # Optional: custom Jira story points field (default: customfield_10031)
 export JIRA_STORY_POINTS_FIELD="customfield_10031"
 
-# Dev scripts aliases (--bun flag ensures Bun runs the script, not node)
-alias pull-all="bun run --cwd ~/.scripts pull-all"
-alias jira="bun run --cwd ~/.scripts jira"
-alias confluence="bun run --cwd ~/.scripts confluence"
-alias download-confluence="bun run --cwd ~/.scripts download-confluence"
+# Binaries are globally linked via `bun link` (in ~/.bun/bin/)
+# Run once after cloning:
+#   cd packages/pull-all && bun link
+#   cd packages/atlassian-cli && bun link
 ```
