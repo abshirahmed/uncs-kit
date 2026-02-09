@@ -1,15 +1,18 @@
 #!/usr/bin/env bun
 
 /**
- * Links all CLI binaries as shim scripts.
- * Run once after cloning: `bun run setup`
+ * Links (or unlinks) all CLI binaries as shim scripts.
  *
- * - macOS/Linux: generates shell scripts in ~/.local/bin/
- * - Windows: generates .cmd files in %LOCALAPPDATA%\bin\
+ * Usage:
+ *   bun run setup              # Install shims
+ *   bun run setup --uninstall  # Remove shims
+ *
+ * - macOS/Linux: ~/.local/bin/
+ * - Windows: %LOCALAPPDATA%\bin\
  */
 
 import { resolve, join } from "path";
-import { readdir, mkdir, writeFile, chmod } from "fs/promises";
+import { readdir, mkdir, writeFile, chmod, unlink } from "fs/promises";
 
 const isWindows = process.platform === "win32";
 const ROOT = import.meta.dir;
@@ -51,34 +54,57 @@ if (bins.length === 0) {
   process.exit(0);
 }
 
-await mkdir(BIN_DIR, { recursive: true });
+const isUninstall = process.argv.includes("--uninstall");
 
-for (const bin of bins) {
-  if (isWindows) {
-    const shimPath = join(BIN_DIR, `${bin.name}.cmd`);
-    const shim = `@bun "${bin.path}" %*\r\n`;
-    await writeFile(shimPath, shim);
-  } else {
-    const shimPath = join(BIN_DIR, bin.name);
-    const shim = `#!/bin/sh\nexec bun "${bin.path}" "$@"\n`;
-    await writeFile(shimPath, shim);
-    await chmod(shimPath, 0o755);
+if (isUninstall) {
+  let removed = 0;
+
+  for (const bin of bins) {
+    const shimPath = join(BIN_DIR, isWindows ? `${bin.name}.cmd` : bin.name);
+    try {
+      await unlink(shimPath);
+      console.log(`  Removed ${shimPath}`);
+      removed++;
+    } catch {
+      // Shim doesn't exist, skip
+    }
   }
-  console.log(`  ${bin.name} → ${bin.path}`);
-}
 
-console.log(`\nLinked ${bins.length} binaries to ${BIN_DIR}`);
-
-// Check if BIN_DIR is in PATH
-const separator = isWindows ? ";" : ":";
-const pathDirs = (process.env.PATH ?? "").split(separator);
-const inPath = pathDirs.some((dir) => resolve(dir) === resolve(BIN_DIR));
-
-if (!inPath) {
-  console.log(`\nNote: ${BIN_DIR} is not in your PATH.`);
-  if (isWindows) {
-    console.log(`  Run: setx PATH "%PATH%;${BIN_DIR}"`);
+  if (removed === 0) {
+    console.log("No shims found to remove.");
   } else {
-    console.log(`  Add to your shell profile: export PATH="$HOME/.local/bin:$PATH"`);
+    console.log(`\nRemoved ${removed} binary shim${removed === 1 ? "" : "s"} from ${BIN_DIR}`);
+  }
+} else {
+  await mkdir(BIN_DIR, { recursive: true });
+
+  for (const bin of bins) {
+    if (isWindows) {
+      const shimPath = join(BIN_DIR, `${bin.name}.cmd`);
+      const shim = `@bun "${bin.path}" %*\r\n`;
+      await writeFile(shimPath, shim);
+    } else {
+      const shimPath = join(BIN_DIR, bin.name);
+      const shim = `#!/bin/sh\nexec bun "${bin.path}" "$@"\n`;
+      await writeFile(shimPath, shim);
+      await chmod(shimPath, 0o755);
+    }
+    console.log(`  ${bin.name} → ${bin.path}`);
+  }
+
+  console.log(`\nLinked ${bins.length} binaries to ${BIN_DIR}`);
+
+  // Check if BIN_DIR is in PATH
+  const separator = isWindows ? ";" : ":";
+  const pathDirs = (process.env.PATH ?? "").split(separator);
+  const inPath = pathDirs.some((dir) => resolve(dir) === resolve(BIN_DIR));
+
+  if (!inPath) {
+    console.log(`\nNote: ${BIN_DIR} is not in your PATH.`);
+    if (isWindows) {
+      console.log(`  Run: setx PATH "%PATH%;${BIN_DIR}"`);
+    } else {
+      console.log(`  Add to your shell profile: export PATH="$HOME/.local/bin:$PATH"`);
+    }
   }
 }
