@@ -6,10 +6,6 @@ Instructions for Claude Code when working in the uncs-kit monorepo.
 
 `uncs-kit` is a Bun workspaces monorepo containing CLI tools for development workflows, published under the `@uncskit` npm scope. See [README.md](./README.md) for full usage documentation.
 
-## Location
-
-This repo lives at `~/.scripts/` (global, not tied to any project).
-
 ## Monorepo Structure
 
 ```
