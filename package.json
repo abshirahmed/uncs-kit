@@ -2,6 +2,12 @@
   "name": "uncs-kit",
   "private": true,
   "workspaces": ["packages/*"],
+  "scripts": {
+    "pull-all": "bun packages/pull-all/src/cli.ts",
+    "jira": "bun packages/atlassian-cli/src/jira.ts",
+    "confluence": "bun packages/atlassian-cli/src/confluence.ts",
+    "download-confluence": "bun packages/atlassian-cli/src/download-confluence.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5"

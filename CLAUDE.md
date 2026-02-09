@@ -27,22 +27,22 @@ uncs-kit/
 ```bash
 bun install                                    # Install all workspace deps
 
-# Pull repos
-bun packages/pull-all/src/cli.ts               # Pull repos in current directory
-bun packages/pull-all/src/cli.ts ~/projects    # Pull repos in specified directory
-bun packages/pull-all/src/cli.ts --dry-run     # Preview only
+# Pull repos (via alias or bun run)
+pull-all                                       # Pull repos in current directory
+pull-all ~/projects                            # Pull repos in specified directory
+pull-all --dry-run                             # Preview only
 
 # Jira
-bun packages/atlassian-cli/src/jira.ts get PAD-123
-bun packages/atlassian-cli/src/jira.ts search "project = PAD"
-bun packages/atlassian-cli/src/jira.ts create -p PAD -t Bug -s "Title" -d ./report.md
+jira get PAD-123                               # Fetch issue
+jira search "project = PAD"                    # Search with JQL
+jira create -p PAD -t Bug -s "Title" -d ./report.md
 
 # Confluence
-bun packages/atlassian-cli/src/confluence.ts get 123456789
-bun packages/atlassian-cli/src/confluence.ts search "query"
+confluence get 123456789                       # Fetch page
+confluence search "query"                      # Search pages
 
 # Download Confluence
-bun packages/atlassian-cli/src/download-confluence.ts search "query" -o ./output/
+download-confluence search "query" -o ./output/
 ```
 
 ## Adding New Packages
@@ -71,9 +71,9 @@ export ATLASSIAN_API_TOKEN="your-token"
 # Optional: custom Jira story points field (default: customfield_10031)
 export JIRA_STORY_POINTS_FIELD="customfield_10031"
 
-# Dev scripts aliases
-alias pull-all="bun ~/.scripts/packages/pull-all/src/cli.ts"
-alias jira="bun ~/.scripts/packages/atlassian-cli/src/jira.ts"
-alias confluence="bun ~/.scripts/packages/atlassian-cli/src/confluence.ts"
-alias download-confluence="bun ~/.scripts/packages/atlassian-cli/src/download-confluence.ts"
+# Dev scripts aliases (--bun flag ensures Bun runs the script, not node)
+alias pull-all="bun run --cwd ~/.scripts pull-all"
+alias jira="bun run --cwd ~/.scripts jira"
+alias confluence="bun run --cwd ~/.scripts confluence"
+alias download-confluence="bun run --cwd ~/.scripts download-confluence"
 ```

@@ -27,10 +27,10 @@ bun install
 Add aliases to `~/.zshrc`:
 
 ```bash
-alias pull-all="bun ~/.scripts/packages/pull-all/src/cli.ts"
-alias jira="bun ~/.scripts/packages/atlassian-cli/src/jira.ts"
-alias confluence="bun ~/.scripts/packages/atlassian-cli/src/confluence.ts"
-alias download-confluence="bun ~/.scripts/packages/atlassian-cli/src/download-confluence.ts"
+alias pull-all="bun run --cwd ~/.scripts pull-all"
+alias jira="bun run --cwd ~/.scripts jira"
+alias confluence="bun run --cwd ~/.scripts confluence"
+alias download-confluence="bun run --cwd ~/.scripts download-confluence"
 ```
 
 For Atlassian tools, you'll also need API credentials — see the [atlassian-cli README](./packages/atlassian-cli/).
