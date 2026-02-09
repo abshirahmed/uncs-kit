@@ -209,7 +209,7 @@ program
       let body = '<p></p>'; // Default empty body
 
       if (options.stdin) {
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         for await (const chunk of Bun.stdin.stream()) {
           chunks.push(chunk);
         }
@@ -292,7 +292,7 @@ program
       let body: string | undefined;
 
       if (options.stdin) {
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         for await (const chunk of Bun.stdin.stream()) {
           chunks.push(chunk);
         }
