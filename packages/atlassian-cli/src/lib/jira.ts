@@ -516,6 +516,27 @@ export async function deleteIssue(
 }
 
 
+/**
+ * Add a comment to an issue (markdown converted to ADF)
+ */
+export async function addComment(
+  client: Version3Client,
+  issueIdOrKey: string,
+  body: string
+): Promise<boolean> {
+  try {
+    await client.issueComments.addComment({
+      issueIdOrKey,
+      comment: markdownToAdf(body) as Parameters<typeof client.issueComments.addComment>[0]['comment'],
+    });
+    return true;
+  } catch (error) {
+    const err = error as Error;
+    log.error(`Failed to add comment: ${err.message}`);
+    return false;
+  }
+}
+
 export interface UpdateIssueParams {
   summary?: string;
   description?: string | object;

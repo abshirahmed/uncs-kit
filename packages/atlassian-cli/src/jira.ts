@@ -22,6 +22,7 @@ import {
   updateIssue,
   deleteIssue,
   findUser,
+  addComment,
 } from './lib/jira.ts';
 
 const program = new Command();
@@ -439,6 +440,83 @@ program
         return;
       }
 
+      if (issue) {
+        log.blank();
+        log.success(`URL: ${issue.url}`);
+      }
+    }
+  );
+
+// ============================================================================
+// COMMENT - Add a comment to an issue
+// ============================================================================
+program
+  .command('comment <issueKey>')
+  .description('Add a comment to a Jira issue')
+  .option('-m, --message <text>', 'Comment text (markdown)')
+  .option('-f, --file <path>', 'Read comment from a markdown file')
+  .option('--stdin', 'Read comment from stdin')
+  .option('-j, --json', 'Output as JSON')
+  .action(
+    async (
+      issueKey: string,
+      options: {
+        message?: string;
+        file?: string;
+        stdin?: boolean;
+        json?: boolean;
+      }
+    ) => {
+      if (!options.json) {
+        log.title('Jira - Add Comment');
+        log.subtitle();
+      }
+
+      const config = loadConfig();
+      const client = createClient(config);
+
+      // Get comment body
+      let body: string | undefined;
+
+      if (options.stdin) {
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of Bun.stdin.stream()) {
+          chunks.push(chunk);
+        }
+        body = Buffer.concat(chunks).toString('utf-8');
+      } else if (options.file) {
+        const file = Bun.file(options.file);
+        if (!(await file.exists())) {
+          log.error(`File not found: ${options.file}`);
+          process.exit(1);
+        }
+        body = await file.text();
+      } else if (options.message) {
+        body = options.message;
+      }
+
+      if (!body) {
+        log.error('No comment provided. Use -m, -f, or --stdin');
+        process.exit(1);
+      }
+
+      const s = !options.json ? spinner(`Adding comment to ${issueKey}...`).start() : null;
+
+      const success = await addComment(client, issueKey, body);
+
+      if (!success) {
+        s?.fail('Failed to add comment');
+        process.exit(1);
+      }
+
+      s?.succeed(`Comment added to ${issueKey}`);
+
+      if (options.json) {
+        console.log(JSON.stringify({ commented: true, key: issueKey }));
+        return;
+      }
+
+      const issue = await getIssue(client, issueKey);
       if (issue) {
         log.blank();
         log.success(`URL: ${issue.url}`);

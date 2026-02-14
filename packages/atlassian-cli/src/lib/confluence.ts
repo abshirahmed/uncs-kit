@@ -235,6 +235,33 @@ export async function updatePage(
 }
 
 /**
+ * Add a comment to a page
+ */
+export async function addComment(
+  client: ConfluenceClient,
+  pageId: string,
+  body: string
+): Promise<boolean> {
+  try {
+    await client.content.createContent({
+      type: 'comment',
+      container: { id: pageId, type: 'page' },
+      body: {
+        storage: {
+          value: body,
+          representation: 'storage',
+        },
+      },
+    });
+    return true;
+  } catch (error) {
+    const err = error as Error;
+    log.error(`Failed to add comment: ${err.message}`);
+    return false;
+  }
+}
+
+/**
  * Delete a page
  */
 export async function deletePage(

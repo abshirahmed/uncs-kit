@@ -23,6 +23,7 @@ import {
   createPage,
   updatePage,
   deletePage,
+  addComment,
 } from './lib/confluence.ts';
 
 const program = new Command();
@@ -331,6 +332,80 @@ program
 
       log.blank();
       log.success(`URL: https://${config.site}/wiki/spaces/${page.spaceKey}/pages/${page.id}`);
+    }
+  );
+
+// ============================================================================
+// COMMENT - Add a comment to a page
+// ============================================================================
+program
+  .command('comment <pageId>')
+  .description('Add a comment to a Confluence page')
+  .option('-m, --message <text>', 'Comment text (HTML storage format)')
+  .option('-f, --file <path>', 'Read comment from a file')
+  .option('--stdin', 'Read comment from stdin')
+  .option('-j, --json', 'Output as JSON')
+  .action(
+    async (
+      pageId: string,
+      options: {
+        message?: string;
+        file?: string;
+        stdin?: boolean;
+        json?: boolean;
+      }
+    ) => {
+      if (!options.json) {
+        log.title('Confluence - Add Comment');
+        log.subtitle();
+      }
+
+      const config = loadConfig();
+      const client = createClient(config);
+
+      // Get comment body
+      let body: string | undefined;
+
+      if (options.stdin) {
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of Bun.stdin.stream()) {
+          chunks.push(chunk);
+        }
+        body = Buffer.concat(chunks).toString('utf-8');
+      } else if (options.file) {
+        const file = Bun.file(options.file);
+        if (!(await file.exists())) {
+          log.error(`File not found: ${options.file}`);
+          process.exit(1);
+        }
+        body = await file.text();
+      } else if (options.message) {
+        body = options.message;
+      }
+
+      if (!body) {
+        log.error('No comment provided. Use -m, -f, or --stdin');
+        process.exit(1);
+      }
+
+      const s = !options.json ? spinner(`Adding comment to page ${pageId}...`).start() : null;
+
+      const success = await addComment(client, pageId, body);
+
+      if (!success) {
+        s?.fail('Failed to add comment');
+        process.exit(1);
+      }
+
+      s?.succeed('Comment added');
+
+      if (options.json) {
+        console.log(JSON.stringify({ commented: true, pageId }));
+        return;
+      }
+
+      log.blank();
+      log.success(`URL: https://${config.site}/wiki/pages/viewpage.action?pageId=${pageId}`);
     }
   );
 

@@ -51,6 +51,11 @@ jira update PAD-123 -d ./new-description.md
 jira update PAD-123 --points 3
 jira update PAD-123 --unassign
 
+# Add a comment (markdown auto-converted to ADF)
+jira comment PAD-123 -m "Looks good, merging now"
+jira comment PAD-123 -f ./investigation-notes.md
+cat notes.md | jira comment PAD-123 --stdin
+
 # Delete an issue
 jira delete PAD-123
 
@@ -113,6 +118,11 @@ cat content.html | confluence create -s ENG -t "From Stdin" --stdin
 # Update a page
 confluence update 123456789 -t "New Title"
 confluence update 123456789 -b ./new-content.html
+
+# Add a comment (HTML storage format)
+confluence comment 123456789 -m "<p>Updated the docs</p>"
+confluence comment 123456789 -f ./comment.html
+cat comment.html | confluence comment 123456789 --stdin
 
 # Delete a page
 confluence delete 123456789
