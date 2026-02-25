@@ -4,7 +4,7 @@ import { readdir, stat } from 'fs/promises';
 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.cache', 'dist', 'build', '.next']);
 
-export type BranchStatus = 'deleted' | 'skipped' | 'failed';
+export type BranchStatus = 'deleted' | 'skipped' | 'failed' | 'would-delete';
 
 export interface BranchResult {
   name: string;
@@ -17,7 +17,6 @@ export interface BranchResult {
 export interface RepoResult {
   repo: string;
   branches: BranchResult[];
-  fetchSuccess: boolean;
   checkedOutMain: boolean;
   error?: string;
 }
@@ -25,7 +24,6 @@ export interface RepoResult {
 export interface PruneOptions {
   checkoutMain: boolean;
   force: boolean;
-  noFetch: boolean;
   dryRun: boolean;
 }
 
@@ -123,19 +121,10 @@ export async function pruneRepo(dir: string, options: PruneOptions): Promise<Rep
   const result: RepoResult = {
     repo: dir,
     branches: [],
-    fetchSuccess: true,
     checkedOutMain: false,
   };
 
-  // Phase 1: Fetch
-  if (!options.noFetch) {
-    result.fetchSuccess = await fetchPrune(dir);
-    if (!result.fetchSuccess) {
-      result.error = 'Failed to fetch';
-    }
-  }
-
-  // Phase 2: Checkout main (optional)
+  // Phase 1: Checkout main (optional)
   if (options.checkoutMain) {
     result.checkedOutMain = await checkoutMain(dir);
     if (!result.checkedOutMain) {
@@ -144,32 +133,36 @@ export async function pruneRepo(dir: string, options: PruneOptions): Promise<Rep
     }
   }
 
-  // Phase 3: List branches to prune
+  // Phase 2: List branches to prune
   const currentBranch = await getCurrentBranch(dir);
   const allBranches = await getLocalBranches(dir);
   const toPrune = allBranches.filter((b) => b !== currentBranch);
 
   if (toPrune.length === 0) return result;
 
-  // Phase 4: Check and delete each branch
+  // Phase 3: Check and delete each branch
   for (const branch of toPrune) {
     const branchResult: BranchResult = { name: branch, status: 'deleted' };
 
-    // Safety check: unpushed commits
-    if (!options.force) {
-      const unpushed = await getUnpushedInfo(dir, branch);
-      if (unpushed) {
-        branchResult.status = 'skipped';
-        branchResult.unpushedCommits = unpushed.count;
-        branchResult.latestCommit = unpushed.latest;
-        result.branches.push(branchResult);
-        continue;
-      }
+    // Check for unpushed commits (always in dry-run for info, otherwise only without --force)
+    const unpushed = (!options.force || options.dryRun) ? await getUnpushedInfo(dir, branch) : null;
+
+    // Safety: skip branches with unpushed commits (unless --force)
+    if (!options.force && unpushed) {
+      branchResult.status = 'skipped';
+      branchResult.unpushedCommits = unpushed.count;
+      branchResult.latestCommit = unpushed.latest;
+      result.branches.push(branchResult);
+      continue;
     }
 
-    // Delete (or dry-run)
+    // Dry-run: mark as would-delete, include unpushed info if present
     if (options.dryRun) {
-      branchResult.status = 'deleted'; // Would be deleted
+      branchResult.status = 'would-delete';
+      if (unpushed) {
+        branchResult.unpushedCommits = unpushed.count;
+        branchResult.latestCommit = unpushed.latest;
+      }
       result.branches.push(branchResult);
       continue;
     }

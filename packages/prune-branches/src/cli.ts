@@ -1,4 +1,19 @@
 #!/usr/bin/env bun
+/**
+ * Prune Branches - Delete local git branches safely
+ *
+ * Smart behavior:
+ *   - If current directory IS a git repo: prunes it directly
+ *   - If current directory CONTAINS repos: prunes all subdirectory repos
+ *   - Skips branches with unpushed commits (unless --force)
+ *
+ * Usage:
+ *   prune-branches                    # Prune current repo
+ *   prune-branches ~/projects         # Prune all repos in directory
+ *   prune-branches --checkout-main    # Switch to main before pruning
+ *   prune-branches --force            # Skip unpushed-commit safety
+ *   prune-branches --dry-run          # Preview what would happen
+ */
 
 import { Command } from 'commander';
 import { log, spinner, summaryBox, createTable, itemList } from '@uncskit/shared';
@@ -7,6 +22,7 @@ import { resolve, basename, join } from 'path';
 import {
   isGitRepo,
   getRepoDirs,
+  fetchPrune,
   pruneRepo,
   type RepoResult,
   type BranchResult,
@@ -19,6 +35,8 @@ function formatBranchStatus(status: BranchResult['status']): string {
   switch (status) {
     case 'deleted':
       return chalk.red.bold('✗ deleted');
+    case 'would-delete':
+      return chalk.cyan('~ would delete');
     case 'skipped':
       return chalk.yellow('○ skipped');
     case 'failed':
@@ -35,13 +53,12 @@ function formatSkippedDetail(branch: BranchResult): string {
 
 function displaySingleRepo(
   result: RepoResult,
-  rootName: string,
   options: { dryRun?: boolean; json?: boolean },
   elapsed: string
 ): void {
   if (options.json) return;
 
-  const deleted = result.branches.filter((b) => b.status === 'deleted');
+  const deleted = result.branches.filter((b) => b.status === 'deleted' || b.status === 'would-delete');
   const skipped = result.branches.filter((b) => b.status === 'skipped');
   const failed = result.branches.filter((b) => b.status === 'failed');
 
@@ -54,9 +71,9 @@ function displaySingleRepo(
   // Branch results table
   const table = createTable(['Branch', 'Status']);
 
-  // Sort: deleted first, then failed, then skipped
-  const sortOrder = { deleted: 0, failed: 1, skipped: 2 };
-  const sorted = [...result.branches].sort((a, b) => sortOrder[a.status] - sortOrder[b.status]);
+  // Sort: deleted/would-delete first, then failed, then skipped
+  const sortOrder: Record<string, number> = { deleted: 0, 'would-delete': 0, failed: 1, skipped: 2 };
+  const sorted = [...result.branches].sort((a, b) => (sortOrder[a.status] ?? 3) - (sortOrder[b.status] ?? 3));
 
   for (const branch of sorted) {
     table.push([branch.name, formatBranchStatus(branch.status)]);
@@ -73,11 +90,14 @@ function displaySingleRepo(
     itemList('Skipped branches (unpushed commits)', skippedItems);
   }
 
-  summaryBox(`Completed in ${elapsed}s`, {
+  const summary: Record<string, number> = {
     Deleted: deleted.length,
     Skipped: skipped.length,
-    Failed: failed.length,
-  });
+  };
+  if (failed.length > 0) {
+    summary.Failed = failed.length;
+  }
+  summaryBox(`Completed in ${elapsed}s`, summary);
 }
 
 function displayMultiRepo(
@@ -92,7 +112,7 @@ function displayMultiRepo(
 
   for (const result of results) {
     const repoName = basename(result.repo);
-    const deleted = result.branches.filter((b) => b.status === 'deleted').length;
+    const deleted = result.branches.filter((b) => b.status === 'deleted' || b.status === 'would-delete').length;
     const skipped = result.branches.filter((b) => b.status === 'skipped').length;
     const failed = result.branches.filter((b) => b.status === 'failed').length;
 
@@ -132,7 +152,7 @@ function displayMultiRepo(
 
   // Totals
   const totalDeleted = results.reduce(
-    (sum, r) => sum + r.branches.filter((b) => b.status === 'deleted').length,
+    (sum, r) => sum + r.branches.filter((b) => b.status === 'deleted' || b.status === 'would-delete').length,
     0
   );
   const totalSkipped = results.reduce(
@@ -144,12 +164,15 @@ function displayMultiRepo(
     0
   );
 
-  summaryBox(`Completed in ${elapsed}s`, {
+  const summary: Record<string, number> = {
     Repos: results.length,
     Deleted: totalDeleted,
     Skipped: totalSkipped,
-    Failed: totalFailed,
-  });
+  };
+  if (totalFailed > 0) {
+    summary.Failed = totalFailed;
+  }
+  summaryBox(`Completed in ${elapsed}s`, summary);
 }
 
 program
@@ -177,10 +200,11 @@ program
       const rootName = basename(root);
       const startTime = Date.now();
 
+      const noFetch = options.fetch === false; // Commander's --no-fetch sets options.fetch to false
+
       const pruneOptions: PruneOptions = {
         checkoutMain: options.checkoutMain ?? false,
         force: options.force ?? false,
-        noFetch: options.fetch === false,
         dryRun: options.dryRun ?? false,
       };
 
@@ -200,17 +224,20 @@ program
 
       if (rootIsRepo) {
         // Single repo mode
-        const fetchSpinner =
-          !options.json && !pruneOptions.noFetch ? spinner('Fetching latest...').start() : null;
 
-        const result = await pruneRepo(root, pruneOptions);
-
-        if (fetchSpinner) {
-          result.fetchSuccess ? fetchSpinner.succeed('Fetched latest') : fetchSpinner.warn('Fetch failed');
+        // Phase 1: Fetch
+        if (!noFetch) {
+          const fetchSpinner = !options.json ? spinner('Fetching latest...').start() : null;
+          const fetchSuccess = await fetchPrune(root);
+          if (fetchSpinner) {
+            fetchSuccess ? fetchSpinner.succeed('Fetched latest') : fetchSpinner.warn('Fetch failed');
+          }
         }
 
+        // Phase 2: Prune
         const pruneSpinner = !options.json ? spinner('Pruning branches...').start() : null;
-        const deleted = result.branches.filter((b) => b.status === 'deleted').length;
+        const result = await pruneRepo(root, pruneOptions);
+        const deleted = result.branches.filter((b) => b.status === 'deleted' || b.status === 'would-delete').length;
         const skipped = result.branches.filter((b) => b.status === 'skipped').length;
 
         if (pruneSpinner) {
@@ -239,7 +266,7 @@ program
           return;
         }
 
-        displaySingleRepo(result, rootName, options, elapsed);
+        displaySingleRepo(result, options, elapsed);
       } else {
         // Multi-repo mode
         const scanSpinner = !options.json ? spinner('Scanning repos...').start() : null;
@@ -268,6 +295,9 @@ program
         const results = await Promise.all(
           repos.map(async (name) => {
             const dir = join(root, name);
+            if (!noFetch) {
+              await fetchPrune(dir);
+            }
             const result = await pruneRepo(dir, pruneOptions);
             result.repo = name;
             completed++;
@@ -281,7 +311,7 @@ program
         );
 
         const totalDeleted = results.reduce(
-          (sum, r) => sum + r.branches.filter((b) => b.status === 'deleted').length,
+          (sum, r) => sum + r.branches.filter((b) => b.status === 'deleted' || b.status === 'would-delete').length,
           0
         );
 
