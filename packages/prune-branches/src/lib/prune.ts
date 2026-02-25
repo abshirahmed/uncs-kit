@@ -110,6 +110,15 @@ export async function getUnpushedInfo(
   }
 }
 
+export async function hasUncommittedChanges(dir: string): Promise<boolean> {
+  try {
+    const result = await $`git -C ${dir} status --porcelain`.quiet();
+    return result.text().trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function deleteBranch(dir: string, branch: string): Promise<boolean> {
   try {
     await $`git -C ${dir} branch -D ${branch}`.quiet();
@@ -125,6 +134,12 @@ export async function pruneRepo(dir: string, options: PruneOptions): Promise<Rep
     branches: [],
     checkedOutMain: false,
   };
+
+  // Phase 0: Check for uncommitted changes
+  if (await hasUncommittedChanges(dir)) {
+    result.error = 'Has uncommitted changes';
+    return result;
+  }
 
   // Phase 1: Checkout main (optional)
   if (options.checkoutMain) {

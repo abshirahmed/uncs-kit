@@ -62,6 +62,11 @@ function displaySingleRepo(
   const skipped = result.branches.filter((b) => b.status === 'skipped');
   const failed = result.branches.filter((b) => b.status === 'failed');
 
+  if (result.error) {
+    log.warning(result.error);
+    return;
+  }
+
   if (result.branches.length === 0) {
     log.success('No branches to prune — already clean.');
     summaryBox(`Completed in ${elapsed}s`, { Deleted: 0, Skipped: 0 });
@@ -148,6 +153,15 @@ function displayMultiRepo(
 
   if (allSkipped.length > 0) {
     itemList('Skipped branches (unpushed commits)', allSkipped);
+  }
+
+  // Collect repos with errors
+  const errorRepos = results
+    .filter((r) => r.error)
+    .map((r) => `${chalk.bold(basename(r.repo))} — ${r.error}`);
+
+  if (errorRepos.length > 0) {
+    itemList('Repos skipped', errorRepos);
   }
 
   // Totals
