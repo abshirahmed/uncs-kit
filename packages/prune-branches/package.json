@@ -1,0 +1,14 @@
+{
+  "name": "@uncskit/prune-branches",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Delete local git branches, skip branches with unpushed commits.",
+  "bin": {
+    "prune-branches": "./src/cli.ts"
+  },
+  "dependencies": {
+    "@uncskit/shared": "workspace:*",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2"
+  }
+}
