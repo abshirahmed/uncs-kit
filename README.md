@@ -11,6 +11,7 @@ CLI tools for git workflows and Atlassian (Jira + Confluence) — built for deve
 | Package | What it does |
 |---|---|
 | [`@uncskit/pull-all`](./packages/pull-all/) | Update all your git repos in one command. Pulls main, fetches main for feature branches. |
+| [`@uncskit/prune-branches`](./packages/prune-branches/) | Delete local git branches safely. Skips branches with unpushed commits, supports multi-repo. |
 | [`@uncskit/atlassian-cli`](./packages/atlassian-cli/) | Jira and Confluence from the terminal. Create issues from markdown, download pages for AI context. |
 | `@uncskit/shared` | Internal utilities — logger, markdown converter. You won't install this directly. |
 
@@ -34,7 +35,7 @@ bun install
 bun run setup
 ```
 
-That's it. `bun run setup` creates shim scripts in `~/.local/bin/` so `pull-all`, `jira`, `confluence`, and `download-confluence` work anywhere. If that directory isn't in your PATH, the script tells you what to add.
+That's it. `bun run setup` creates shim scripts in `~/.local/bin/` so `pull-all`, `prune-branches`, `jira`, `confluence`, and `download-confluence` work anywhere. If that directory isn't in your PATH, the script tells you what to add.
 
 To remove the shims later: `bun run setup --uninstall`
 
@@ -43,6 +44,12 @@ To remove the shims later: `bun run setup --uninstall`
 ```bash
 # Update every repo in your projects folder
 pull-all ~/projects
+
+# Clean up stale local branches (skips branches with unpushed work)
+prune-branches ~/projects
+
+# Preview what would be deleted
+prune-branches --dry-run
 
 # Grab a Jira issue
 jira get PAD-123
