@@ -84,7 +84,9 @@ export async function getCurrentBranch(dir: string): Promise<string | null> {
 
 export async function getLocalBranches(dir: string): Promise<string[]> {
   try {
-    const result = await $`git -C ${dir} branch --format=%(refname:short)`.quiet();
+    // Format string passed as variable — Bun's $ shell misparses %(…) as shell syntax
+    const fmt = '%(refname:short)';
+    const result = await $`git -C ${dir} branch --format=${fmt}`.quiet();
     return result.text().trim().split('\n').filter(Boolean);
   } catch {
     return [];
