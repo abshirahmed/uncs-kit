@@ -21,6 +21,7 @@ bun packages/pull-all/src/cli.ts [args]
 bun packages/atlassian-cli/src/jira.ts [args]
 bun packages/atlassian-cli/src/confluence.ts [args]
 bun packages/atlassian-cli/src/download-confluence.ts [args]
+bun packages/prune-branches/src/cli.ts [args]
 ```
 
 ## Architecture
@@ -30,14 +31,16 @@ bun packages/atlassian-cli/src/download-confluence.ts [args]
 ```
 packages/
 ├── shared/          # @uncskit/shared — internal TUI + markdown utilities
-├── pull-all/        # @uncskit/pull-all — git multi-repo updater
-└── atlassian-cli/   # @uncskit/atlassian-cli — jira, confluence, download-confluence CLIs
+├── pull-all/          # @uncskit/pull-all — git multi-repo updater
+├── prune-branches/    # @uncskit/prune-branches — safe local branch pruner
+└── atlassian-cli/     # @uncskit/atlassian-cli — jira, confluence, download-confluence CLIs
 ```
 
 ### Package Dependency Graph
 
 ```
 pull-all ──→ shared
+prune-branches ──→ shared
 atlassian-cli ──→ shared
 ```
 
