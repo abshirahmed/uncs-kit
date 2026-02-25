@@ -1,1 +1,187 @@
-// Git operations for branch pruning
+import { $ } from 'bun';
+import { join } from 'path';
+import { readdir, stat } from 'fs/promises';
+
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.cache', 'dist', 'build', '.next']);
+
+export type BranchStatus = 'deleted' | 'skipped' | 'failed';
+
+export interface BranchResult {
+  name: string;
+  status: BranchStatus;
+  unpushedCommits?: number;
+  latestCommit?: string;
+  error?: string;
+}
+
+export interface RepoResult {
+  repo: string;
+  branches: BranchResult[];
+  fetchSuccess: boolean;
+  checkedOutMain: boolean;
+  error?: string;
+}
+
+export interface PruneOptions {
+  checkoutMain: boolean;
+  force: boolean;
+  noFetch: boolean;
+  dryRun: boolean;
+}
+
+export async function isGitRepo(dir: string): Promise<boolean> {
+  try {
+    const gitDir = join(dir, '.git');
+    const stats = await stat(gitDir);
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+export async function getRepoDirs(root: string): Promise<string[]> {
+  const entries = await readdir(root, { withFileTypes: true });
+  const dirs: string[] = [];
+
+  for (const entry of entries) {
+    if (entry.isDirectory() && !SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) {
+      dirs.push(entry.name);
+    }
+  }
+
+  return dirs.sort();
+}
+
+export async function fetchPrune(dir: string): Promise<boolean> {
+  try {
+    await $`git -C ${dir} fetch --prune`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function checkoutMain(dir: string): Promise<boolean> {
+  try {
+    await $`git -C ${dir} checkout main`.quiet();
+    return true;
+  } catch {
+    try {
+      await $`git -C ${dir} checkout master`.quiet();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export async function getCurrentBranch(dir: string): Promise<string | null> {
+  try {
+    const result = await $`git -C ${dir} rev-parse --abbrev-ref HEAD`.quiet();
+    return result.text().trim();
+  } catch {
+    return null;
+  }
+}
+
+export async function getLocalBranches(dir: string): Promise<string[]> {
+  try {
+    const result = await $`git -C ${dir} branch --format=%(refname:short)`.quiet();
+    return result.text().trim().split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export async function getUnpushedInfo(
+  dir: string,
+  branch: string
+): Promise<{ count: number; latest: string } | null> {
+  try {
+    const result = await $`git -C ${dir} log ${branch} --not --remotes --oneline`.quiet();
+    const lines = result.text().trim().split('\n').filter(Boolean);
+    if (lines.length === 0) return null;
+
+    // First line format: "a1b2c3d commit message"
+    const latest = lines[0]!.replace(/^\S+\s+/, '');
+    return { count: lines.length, latest };
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteBranch(dir: string, branch: string): Promise<boolean> {
+  try {
+    await $`git -C ${dir} branch -D ${branch}`.quiet();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function pruneRepo(dir: string, options: PruneOptions): Promise<RepoResult> {
+  const result: RepoResult = {
+    repo: dir,
+    branches: [],
+    fetchSuccess: true,
+    checkedOutMain: false,
+  };
+
+  // Phase 1: Fetch
+  if (!options.noFetch) {
+    result.fetchSuccess = await fetchPrune(dir);
+    if (!result.fetchSuccess) {
+      result.error = 'Failed to fetch';
+    }
+  }
+
+  // Phase 2: Checkout main (optional)
+  if (options.checkoutMain) {
+    result.checkedOutMain = await checkoutMain(dir);
+    if (!result.checkedOutMain) {
+      result.error = 'Failed to checkout main/master';
+      return result;
+    }
+  }
+
+  // Phase 3: List branches to prune
+  const currentBranch = await getCurrentBranch(dir);
+  const allBranches = await getLocalBranches(dir);
+  const toPrune = allBranches.filter((b) => b !== currentBranch);
+
+  if (toPrune.length === 0) return result;
+
+  // Phase 4: Check and delete each branch
+  for (const branch of toPrune) {
+    const branchResult: BranchResult = { name: branch, status: 'deleted' };
+
+    // Safety check: unpushed commits
+    if (!options.force) {
+      const unpushed = await getUnpushedInfo(dir, branch);
+      if (unpushed) {
+        branchResult.status = 'skipped';
+        branchResult.unpushedCommits = unpushed.count;
+        branchResult.latestCommit = unpushed.latest;
+        result.branches.push(branchResult);
+        continue;
+      }
+    }
+
+    // Delete (or dry-run)
+    if (options.dryRun) {
+      branchResult.status = 'deleted'; // Would be deleted
+      result.branches.push(branchResult);
+      continue;
+    }
+
+    const deleted = await deleteBranch(dir, branch);
+    if (!deleted) {
+      branchResult.status = 'failed';
+      branchResult.error = 'git branch -D failed';
+    }
+
+    result.branches.push(branchResult);
+  }
+
+  return result;
+}
